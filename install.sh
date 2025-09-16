@@ -49,16 +49,22 @@ sed -i "s|/root/Workspace/nginx_quic/|$SCRIPT_DIR/|g" "$SCRIPT_DIR/config/nginx.
 echo "Updated nginx.conf with installation paths: $SCRIPT_DIR"
 
 # Check if SSL certificates exist
-if [ ! -f "$SCRIPT_DIR/ssl/server.crt" ]; then
+if [ ! -f "$SCRIPT_DIR/ssl/server_san.crt" ]; then
     echo "Generating SSL certificates..."
     cd "$SCRIPT_DIR/ssl"
     
     # Generate private key
     openssl genrsa -out server.key 2048
     
-    # Generate certificate
-    openssl req -new -x509 -key server.key -out server.crt -days 365 \
-        -subj "/C=US/ST=Test/L=Test/O=NGINX-QUIC/CN=localhost"
+    # Generate certificate with SAN extensions for QUIC
+    openssl req -new -x509 -key server.key -out server_san.crt -days 365 \
+        -subj "/C=US/ST=Test/L=Test/O=NGINX-QUIC/CN=localhost" \
+        -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
+        -addext "keyUsage=digitalSignature,keyEncipherment" \
+        -addext "extendedKeyUsage=serverAuth"
+    
+    # Create compatibility symlink
+    ln -sf server_san.crt server.crt
     
     echo "SSL certificates generated"
 else
