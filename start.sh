@@ -35,8 +35,9 @@ else
     exit 1
 fi
 
-# Stop any existing nginx processes
+# Stop any existing nginx processes and services
 echo "Stopping any existing NGINX processes..."
+systemctl stop nginx 2>/dev/null || true
 pkill nginx 2>/dev/null || true
 sleep 2
 

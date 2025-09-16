@@ -14,6 +14,21 @@ echo "Installing system packages..."
 apt-get update -q
 apt-get install -y nginx openssl curl
 
+# Detect nginx user (varies by distribution)
+if id -u nginx >/dev/null 2>&1; then
+    NGINX_USER="nginx"
+elif id -u www-data >/dev/null 2>&1; then
+    NGINX_USER="www-data"
+else
+    echo "Warning: Neither 'nginx' nor 'www-data' user found"
+    NGINX_USER="nobody"
+fi
+
+echo "Using NGINX user: $NGINX_USER"
+
+# Update nginx.conf with correct user
+sed -i "s/^user .*/user $NGINX_USER;/" "$SCRIPT_DIR/config/nginx.conf"
+
 # Check if SSL certificates exist
 if [ ! -f "$SCRIPT_DIR/ssl/server.crt" ]; then
     echo "Generating SSL certificates..."
