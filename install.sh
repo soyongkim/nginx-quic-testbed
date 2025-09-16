@@ -9,10 +9,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Installing NGINX QUIC Testbed dependencies..."
 
+# Add official NGINX repository for HTTP/3 support
+echo "Adding official NGINX repository..."
+curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
+echo "deb http://nginx.org/packages/ubuntu $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list
+
 # Install system dependencies
 echo "Installing system packages..."
 apt-get update -q
-apt-get install -y nginx openssl curl
+apt-get install -y nginx openssl curl lsb-release
 
 # Detect nginx user (varies by distribution)
 if id -u nginx >/dev/null 2>&1; then
@@ -25,6 +30,15 @@ else
 fi
 
 echo "Using NGINX user: $NGINX_USER"
+
+# Verify NGINX has HTTP/3 support
+if nginx -V 2>&1 | grep -q "http_v3_module"; then
+    echo "✓ NGINX HTTP/3 module is available"
+else
+    echo "✗ NGINX HTTP/3 module not found"
+    echo "This may indicate an installation issue with the NGINX repository"
+    exit 1
+fi
 
 # Update nginx.conf with correct user
 sed -i "s/^user .*/user $NGINX_USER;/" "$SCRIPT_DIR/config/nginx.conf"
