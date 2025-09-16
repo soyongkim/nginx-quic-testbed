@@ -11,7 +11,7 @@ echo "Installing NGINX QUIC Testbed dependencies..."
 
 # Add official NGINX repository for HTTP/3 support
 echo "Adding official NGINX repository..."
-curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
+curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/nginx.gpg
 echo "deb http://nginx.org/packages/ubuntu $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list
 
 # Install system dependencies
@@ -40,8 +40,13 @@ else
     exit 1
 fi
 
-# Update nginx.conf with correct user
+# Update nginx.conf with correct user and paths
 sed -i "s/^user .*/user $NGINX_USER;/" "$SCRIPT_DIR/config/nginx.conf"
+
+# Update SSL certificate paths to use actual installation directory
+sed -i "s|/root/Workspace/nginx_quic/|$SCRIPT_DIR/|g" "$SCRIPT_DIR/config/nginx.conf"
+
+echo "Updated nginx.conf with installation paths: $SCRIPT_DIR"
 
 # Check if SSL certificates exist
 if [ ! -f "$SCRIPT_DIR/ssl/server.crt" ]; then
