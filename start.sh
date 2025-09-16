@@ -24,6 +24,22 @@ if [ ! -f "$NGINX_CONF" ]; then
     exit 1
 fi
 
+# Detect NGINX user (for cross-platform compatibility)
+if id "www-data" &>/dev/null; then
+    NGINX_USER="www-data"
+elif id "nginx" &>/dev/null; then
+    NGINX_USER="nginx"
+else
+    echo "Warning: Neither 'www-data' nor 'nginx' user found. Using 'www-data'."
+    NGINX_USER="www-data"
+fi
+
+# Update nginx.conf with correct user and paths (in case paths changed)
+echo "Updating configuration paths for current directory..."
+sed -i "s/^user .*/user $NGINX_USER;/" "$NGINX_CONF"
+sed -i "s|/root/Workspace/nginx_quic/|$SCRIPT_DIR/|g" "$NGINX_CONF"
+sed -i "s|/home/.*/nginx-quic-testbed/|$SCRIPT_DIR/|g" "$NGINX_CONF"
+
 # Test nginx configuration
 echo "Testing NGINX configuration..."
 nginx -t -c "$NGINX_CONF"
